@@ -102,7 +102,7 @@ describe "ActiveRecord American Gladiator" do
   end
 
   context "The Eliminator" do
-    xit "returns all orders placed 2 weeks ago" do
+    it "returns all orders placed 2 weeks ago" do
       last_week = Date.today.last_week
       two_weeks_ago = Date.today.last_week - 7.days
 
@@ -113,9 +113,8 @@ describe "ActiveRecord American Gladiator" do
       order_5 = Order.create(created_at: two_weeks_ago + 2.days)
 
       # Changeable Start
-      orders = Order.all.select do |order|
-        order.created_at >= two_weeks_ago && order.created_at <= last_week
-      end
+      orders = Order.where(created_at: two_weeks_ago..last_week)
+      #orders = Order.where("created_at >= ?", "%#{two_weeks_ago}%")
       # Changeable End
 
       expect(orders).to eq([order_1, order_3, order_5])
@@ -124,7 +123,7 @@ describe "ActiveRecord American Gladiator" do
 
   context "Atlasphere" do
     # This one is challenging.
-    xit "returns most popular items" do
+    it "returns most popular items" do
       scoring_pod = Item.create(name: "Scoring Pod")
       lights      = Item.create(name: "Lights")
       smoke       = Item.create(name: "Smoke")
@@ -134,23 +133,27 @@ describe "ActiveRecord American Gladiator" do
       Order.create(items: [lights, lights, lights])
 
       # Changeable Start
-      items_with_count = Hash.new(0)
+      # items_with_count = Hash.new(0)
+      #
+      # Order.all.each do |order|
+      #   order.items.each do |item|
+      #     items_with_count[item.id] += 1
+      #   end
+      # end
+      #
+      # top_items_with_count = items_with_count.sort_by { |item_id, count|
+      #   count
+      # }.reverse.first(2)
+      #
+      # top_item_ids = top_items_with_count.first.zip(top_items_with_count.last).first
+      #
+      # most_popular_items = top_item_ids.map do |id|
+      #   Item.find(id)
+      # end
 
-      Order.all.each do |order|
-        order.items.each do |item|
-          items_with_count[item.id] += 1
-        end
-      end
-
-      top_items_with_count = items_with_count.sort_by { |item_id, count|
-        count
-      }.reverse.first(2)
-
-      top_item_ids = top_items_with_count.first.zip(top_items_with_count.last).first
-
-      most_popular_items = top_item_ids.map do |id|
-        Item.find(id)
-      end
+      most_popular_items = most_popular_items = Item.select("items.*, count(order_items.item_id) AS items_count").
+                          joins(:order_items).group("items.id").order("items_count DESC").
+                          limit(2)
       # Changeable Stop
 
       # Hints: http://apidock.com/rails/ActiveRecord/QueryMethods/select
